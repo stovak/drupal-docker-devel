@@ -1,0 +1,3 @@
+#!/usr/bin/env bash
+
+docker exec -t freshdrupalmi_php_1 '/var/www/vendor/bin/drush cr' && docker exec -t freshdrupalmi_redis_1 '/usr/local/bin/redis-cli FLUSHALL'

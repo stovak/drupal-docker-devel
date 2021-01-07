@@ -1,0 +1,11 @@
+#!/usr/bin/env bash
+
+
+docker build -t milken/nginx-dev ./nginx-container && docker push milken/nginx-dev:latest
+
+docker build -t milken/php-dev ./php-container && docker push milken/php-dev:latest
+
+docker build -t milken/mysql-dev ./mysql-container && docker push milken/mysql-dev:latest
+
+
+

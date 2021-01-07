@@ -1,0 +1,35 @@
+#!/usr/bin/env bash
+
+## Initial container actions:
+
+rm -Rf /var/www/html
+ln -s /var/www/web /var/www/html
+mkdir -p /var/www/web/sites/default/files
+mkdir -p /var/www/web/sites/default/private
+mkdir -p /var/www/web/sites/default/temp
+mkdir -p /var/www/web/sites/default/files/webpack
+touch /var/www/web/sites/default/files/.htaccess
+touch /var/www/web/sites/default/private/.htaccess
+touch /var/www/web/sites/default/temp/.htaccess
+
+
+chown -R www-data:www-data /var/www/web/sites/default
+chown www-data:www-data /var/www/web/sites/default/files/.htaccess
+chown www-data:www-data /var/www/web/sites/default/private/.htaccess
+chown www-data:www-data /var/www/web/sites/default/temp/.htaccess
+chown -R www-data:www-data /var/www/web/sites/default/files
+chown -R www-data:www-data /var/www/web/sites/default/files/webpack
+chown -R www-data:www-data /var/www/web/sites/default/private
+chown -R www-data:www-data /var/www/web/sites/default/temp
+chown -R www-data:www-data /var/www/web/vendor
+chmod 755 /var/www/web/sites/default
+chmod 755 /var/www/web/sites/default/files
+chmod 755 /var/www/web/sites/default/temp
+chmod 755 /var/www/web/sites/default/private
+
+cd /root
+
+cd /var/www
+
+##composer install-vendor-dir
+

@@ -1,0 +1,5 @@
+docker:
+  host: localhost
+  user: www-admin
+  root: /var/www/web
+  uri: http://localhost:8080
