@@ -2,5 +2,5 @@
 
 from the root directory:
 
-1. ```docker/bin/setupLoadlDev```
+1. ```make build```
 
