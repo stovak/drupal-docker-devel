@@ -1,5 +1,16 @@
-FROM php:7.4-fpm
-ARG PHP_VERSION=7.4
+FROM php:8.0-fpm
+ARG PHP_VERSION=8.0
+
+LABEL org.label-schema.vendor="pantheon" \
+  org.label-schema.name=$REPO_NAME \
+  org.label-schema.description="Prettier is an opinionated code formatter." \
+  org.label-schema.build-date=$BUILD_DATE \
+  org.label-schema.version=$VERSION \
+  org.label-schema.vcs-ref=$VCS_REF \
+  org.label-schema.vcs-url="https://github.com/$REPO_NAME" \
+  org.label-schema.usage="https://github.com/$REPO_NAME/blob/master/README.md#usage" \
+  org.label-schema.docker.cmd="docker run --rm -v \$PWD:/work $REPO_NAME --parser=markdown --write '**/*.md'" \
+  org.label-schema.schema-version="1.0"
 
 RUN apt-get update -y --fix-missing && apt-get install -y \
       gnupg2
@@ -51,6 +62,7 @@ RUN apt-get update -y --fix-missing && apt-get install -y \
       libjpeg-dev \
       libgd-dev \
       libpng-dev \
+      libyaml-dev \
       libcairo2-dev \
       libgss3 \
       g++ \
@@ -111,7 +123,6 @@ RUN npm install -g yarn
 RUN npm install -g gulp-cli
 RUN npm install -g typescript
 RUN npm install -g eslint
-RUN npm install -g gatsby
 
 # Amazon RDS public certificate chain
 ADD https://s3.amazonaws.com/rds-downloads/rds-combined-ca-bundle.pem  /etc/ssl/certs/rds-combined-ca-bundle.pem
@@ -121,7 +132,7 @@ RUN printf "\n\nexport COMPOSER_ALLOW_SUPERUSER=1\n" >> $HOME/.bash_profile
 RUN curl --silent --show-error https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
 RUN export PATH="/var/www/vendor/bin:/root/.composer/global:./bin:$(composer config -g home)/vendor/bin:$PATH"
 ENV PATH /var/www/vendor/bin:$PATH:/root/.composer/vendor/bin
-RUN composer selfupdate
+RUN composer selfupdate --2
 
 # PHP ${PHP_VERSION}
 RUN docker-php-ext-install -j$(nproc) intl
@@ -133,14 +144,16 @@ RUN docker-php-ext-install -j$(nproc) zip
 RUN docker-php-ext-install -j$(nproc) pdo
 RUN docker-php-ext-install -j$(nproc) pdo_mysql
 RUN docker-php-ext-install -j$(nproc) opcache
+RUN docker-php-ext-install -j$(nproc) yaml
+RUN docker-php-ext-install -j$(nproc) redis
+RUN docker-php-ext-install -j$(nproc) imagick
+RUN docker-php-ext-install -j$(nproc) uploadprogress
+RUN docker-php-ext-install -j$(nproc) redis
+
+
 RUN pear update-channels
 #RUN pear upgrade pear/archive_tar
 
-# Uploadprogress.
-RUN mkdir -p /usr/src/php/ext/uploadprogress; \
-    up_url="https://github.com/wodby/pecl-php-uploadprogress/archive/latest.tar.gz"; \
-    wget -qO- "${up_url}" | tar xz --strip-components=1 -C /usr/src/php/ext/uploadprogress; \
-    docker-php-ext-install uploadprogress;
 
 COPY php/overrides.ini /usr/local/etc/php-fpm.d
 COPY php/php.ini /usr/local/etc/php
@@ -150,16 +163,12 @@ RUN pecl config-set php_ini /usr/local/etc/php/php.ini && \
         pear config-set php_ini /usr/local/etc/php/php.ini && \
         pecl channel-update pecl.php.net
 
-RUN pecl bundle -d /usr/src/php/ext imagick \
-    && rm /usr/src/php/ext/imagick-*.tgz \
-    && docker-php-ext-install imagick
+
 
 RUN docker-php-ext-configure gd --with-freetype=/usr/include/ --with-jpeg=/usr/include/ \
     && docker-php-ext-install -j$(nproc) gd
 # as of 2019-AUG-06 drupal redis module didn't work with redis 5
-RUN pecl bundle -d /usr/src/php/ext redis \
-    && rm /usr/src/php/ext/redis-*.tgz \
-    && docker-php-ext-install redis
+
 
 ## Install MSSQL php extension
 RUN pecl bundle -d /usr/src/php/ext sqlsrv \
@@ -169,13 +178,18 @@ RUN pecl bundle -d /usr/src/php/ext pdo_sqlsrv \
     && rm /usr/src/php/ext/pdo_sqlsrv-*.tgz \
     && docker-php-ext-install pdo_sqlsrv
 
-RUN mkdir /opt/terminus && cd /opt/terminus
-RUN curl -O https://raw.githubusercontent.com/pantheon-systems/terminus-installer/master/builds/installer.phar && php installer.phar install
+RUN mkdir -p /opt
 
+WORKDIR /opt
 
-RUN mkdir -p /root/.terminus/plugins
-RUN composer create-project --no-dev -d /root/.terminus/plugins pantheon-systems/terminus-drupal-console-plugin
-RUN composer create-project --no-dev -d ~/.terminus/plugins pantheon-systems/terminus-rsync-plugin
+RUN cd /opt && git clone https://github.com/pantheon-systems/terminus.git terminus
+WORKDIR /opt/terminus
+RUN cd /opt/terminus && composer install
+RUN cd /opt/terminus && composer update
+
+RUN mkdir -p /opt/terminus/plugins
+RUN composer create-project --no-dev -d /opt/terminus/plugins pantheon-systems/terminus-drupal-console-plugin
+RUN composer create-project --no-dev -d /opt/terminus/plugins pantheon-systems/terminus-rsync-plugin
 
 RUN composer global require consolidation/cgr
 RUN composer global require drupal/coder

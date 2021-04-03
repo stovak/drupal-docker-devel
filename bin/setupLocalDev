@@ -1,6 +1,0 @@
-#!/usr/bin/env bash
-
-cp .env.dist .env
-cp docker/settings.local.php web/sites/default
-
-bin/build
