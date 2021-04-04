@@ -1,0 +1,52 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  creationTimestamp: null
+  labels:
+    pantheon.project: ${PANTHEON_SITE_NAME}
+    pantheon.environment: local
+    pantheon.service: solr
+  name: solr
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      pantheon.service: solr
+  strategy: {}
+  template:
+    metadata:
+      creationTimestamp: null
+      labels:
+        pantheon.service: solr
+    spec:
+      containers:
+        - env:
+            - name: JAVA_HOME
+              value: /usr/local/openjdk-11
+            - name: SOLR_CORE
+              valueFrom:
+                configMapKeyRef:
+                  key: SOLR_CORE
+                  name: env-dist
+            - name: SOLR_HOST
+              valueFrom:
+                configMapKeyRef:
+                  key: SOLR_HOST
+                  name: env-dist
+            - name: SOLR_PATH
+              valueFrom:
+                configMapKeyRef:
+                  key: SOLR_PATH
+                  name: env-dist
+            - name: SOLR_PORT
+              valueFrom:
+                configMapKeyRef:
+                  key: SOLR_PORT
+                  name: env-dist
+          image: ${SOLR_CONTAINER}
+          name: solr-standalone
+          ports:
+            - containerPort: 8983
+          resources: {}
+      restartPolicy: Always
+status: {}

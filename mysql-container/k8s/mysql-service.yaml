@@ -1,0 +1,18 @@
+apiVersion: v1
+kind: Service
+metadata:
+  creationTimestamp: null
+  labels:
+    pantheon.project: ${PANTHEON_SITE_NAME}
+    pantheon.environment: local
+    pantheon.service: mysql
+  name: mysql
+spec:
+  ports:
+  - name: "3306"
+    port: 3306
+    targetPort: 3306
+  selector:
+    pantheon.service: mysql
+status:
+  loadBalancer: {}

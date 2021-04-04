@@ -1,0 +1,193 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  creationTimestamp: null
+  labels:
+    pantheon.project: ${PANTHEON_SITE_NAME}
+    pantheon.environment: local
+    pantheon.service: mysql
+  name: nginx
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      pantheon.service: nginx
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      creationTimestamp: null
+      labels:
+        pantheon.project: ${PANTHEON_SITE_NAME}
+        pantheon.environment: local
+        pantheon.service: mysql
+    spec:
+      containers:
+      - env:
+        - name: BABEL_ENV
+          valueFrom:
+            configMapKeyRef:
+              key: BABEL_ENV
+              name: env
+        - name: CACHE_HOST
+          valueFrom:
+            configMapKeyRef:
+              key: CACHE_HOST
+              name: env
+        - name: CACHE_PORT
+          valueFrom:
+            configMapKeyRef:
+              key: CACHE_PORT
+              name: env
+        - name: COMPOSER_ALLOW_SUPERUSER
+          valueFrom:
+            configMapKeyRef:
+              key: COMPOSER_ALLOW_SUPERUSER
+              name: env
+        - name: DB_DRIVER
+          valueFrom:
+            configMapKeyRef:
+              key: DB_DRIVER
+              name: env
+        - name: DB_HOST
+          valueFrom:
+            configMapKeyRef:
+              key: DB_HOST
+              name: env
+        - name: DB_NAME
+          valueFrom:
+            configMapKeyRef:
+              key: DB_NAME
+              name: env
+        - name: DB_PASSWORD
+          valueFrom:
+            configMapKeyRef:
+              key: DB_PASSWORD
+              name: env
+        - name: DB_PORT
+          valueFrom:
+            configMapKeyRef:
+              key: DB_PORT
+              name: env
+        - name: DB_USER
+          valueFrom:
+            configMapKeyRef:
+              key: DB_USER
+              name: env
+        - name: DRUPAL_HASH_SALT
+          valueFrom:
+            configMapKeyRef:
+              key: DRUPAL_HASH_SALT
+              name: env
+        - name: DRUPAL_MAJOR_VERSION
+          valueFrom:
+            configMapKeyRef:
+              key: DRUPAL_MAJOR_VERSION
+              name: env
+        - name: DRUPAL_SYSTEM_LOGGING_ERROR_LEVEL
+          valueFrom:
+            configMapKeyRef:
+              key: DRUPAL_SYSTEM_LOGGING_ERROR_LEVEL
+              name: env
+        - name: DRUSH_OPTIONS_URI
+          valueFrom:
+            configMapKeyRef:
+              key: DRUSH_OPTIONS_URI
+              name: env
+        - name: ENABLE_GATSBY_REFRESH_ENDPOINT
+          valueFrom:
+            configMapKeyRef:
+              key: ENABLE_GATSBY_REFRESH_ENDPOINT
+              name: env
+        - name: ENV
+          valueFrom:
+            configMapKeyRef:
+              key: ENV
+              name: env
+        - name: MYSQL_DATABASE
+          valueFrom:
+            configMapKeyRef:
+              key: MYSQL_DATABASE
+              name: env
+        - name: MYSQL_PASSWORD
+          valueFrom:
+            configMapKeyRef:
+              key: MYSQL_PASSWORD
+              name: env
+        - name: MYSQL_ROOT_PASSWORD
+          valueFrom:
+            configMapKeyRef:
+              key: MYSQL_ROOT_PASSWORD
+              name: env
+        - name: MYSQL_USER
+          valueFrom:
+            configMapKeyRef:
+              key: MYSQL_USER
+              name: env
+        - name: NODE_ENV
+          valueFrom:
+            configMapKeyRef:
+              key: NODE_ENV
+              name: env
+        - name: PREPROCESS_CSS
+          valueFrom:
+            configMapKeyRef:
+              key: PREPROCESS_CSS
+              name: env
+        - name: PREPROCESS_JS
+          valueFrom:
+            configMapKeyRef:
+              key: PREPROCESS_JS
+              name: env
+        - name: PROD_PASS
+          valueFrom:
+            configMapKeyRef:
+              key: PROD_PASS
+              name: env
+        - name: PROD_USER
+          valueFrom:
+            configMapKeyRef:
+              key: PROD_USER
+              name: env
+        - name: SKIP_PREFLIGHT_CHECK
+          valueFrom:
+            configMapKeyRef:
+              key: SKIP_PREFLIGHT_CHECK
+              name: env
+        - name: SOLR_CORE
+          valueFrom:
+            configMapKeyRef:
+              key: SOLR_CORE
+              name: env
+        - name: SOLR_HOST
+          valueFrom:
+            configMapKeyRef:
+              key: SOLR_HOST
+              name: env
+        - name: SOLR_PATH
+          valueFrom:
+            configMapKeyRef:
+              key: SOLR_PATH
+              name: env
+        - name: SOLR_PORT
+          valueFrom:
+            configMapKeyRef:
+              key: SOLR_PORT
+              name: env
+        image: ${NGINX_CONTAINER}
+        imagePullPolicy: ""
+        name: mi
+        ports:
+        - containerPort: 80
+        - containerPort: 9222
+        resources: {}
+        volumeMounts:
+        - mountPath: /var/www
+          name: nginx-claim0
+      restartPolicy: Always
+      serviceAccountName: ""
+      volumes:
+      - name: nginx-claim0
+        persistentVolumeClaim:
+          claimName: nginx-claim0
+status: {}

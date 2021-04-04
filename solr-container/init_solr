@@ -1,0 +1,17 @@
+#!/usr/bin/env bash
+
+usermod -d /opt/solr solr
+
+
+
+mkdir -p /opt/solr/server/solr/${SOLR_CORE}
+chmod -R 777 /opt/solr/server/solr/${SOLR_CORE}
+
+cp -R /opt/solr/server/solr/configsets/_default/conf /opt/solr/server/solr/${SOLR_CORE}
+
+cd /opt/solr
+
+export PATH=/usr/local/openjdk-11:$PATH
+
+/opt/solr/bin/solr create_core -c $SOLR_CORE
+

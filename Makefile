@@ -1,25 +1,26 @@
 
-PROJECT_NAME=$(basename `git rev-parse --show-toplevel`)
-
+PROJECT_NAME=$(shell basename $(shell git rev-parse --show-toplevel))
 REPO_NAME=${DOCKER_IMAGE_ORG}/${DOCKER_PROJECT_PREFIX}-${PROJECT_NAME}
-
 VCS_REF=$(shell git rev-parse --short HEAD)
-
 DATE_TAG=$(shell TZ=UTC date +%Y-%m-%d_%H.%M)
+
+
+
+## [[ todo: have these be params for the make command ]]
 
 ifndef IMAGE_TAG
 	ifdef CIRCLE_BUILD_NUM
-		IMAGE_TAG=$(CIRCLE_BUILD_NUM).git$(VCS_REF)
+		IMAGE_TAG:=$(CIRCLE_BUILD_NUM).git$(VCS_REF)
 	else
-		IMAGE_TAG=dev-$(VCS_REF)
+		IMAGE_TAG:=dev-$(VCS_REF)
 	endif
 endif
 
 ifndef BUILD_ID
 	ifdef CIRCLE_BUILD_NUM
-		BUILD_ID=${CIRCLE_BUILD_NUM}
+		BUILD_ID:=${CIRCLE_BUILD_NUM}
 	else
-		BUILD_ID=${USER}-$(VCS_REF)
+		BUILD_ID:=${USER}-$(VCS_REF)
 	endif
 endif
 
@@ -29,12 +30,12 @@ ifdef CIRCLE_BUILD_NUM
 endif
 
 
-MYSQL_CONTAINER=${DOCKER_IMAGE_HOST}/${DOCKER_IMAGE_ORG}/${DOCKER_PROJECT_PREFIX}-${PROJECT_NAME}-mysql:$(IMAGE_TAG)
-PHP_CONTAINER=${DOCKER_IMAGE_HOST}/${DOCKER_IMAGE_ORG}/${DOCKER_PROJECT_PREFIX}-${PROJECT_NAME}-php:$(IMAGE_TAG)
-NGINX_CONTAINER=${DOCKER_IMAGE_HOST}/${DOCKER_IMAGE_ORG}/${DOCKER_PROJECT_PREFIX}-${PROJECT_NAME}-nginx:$(IMAGE_TAG)
 
 
-env:
+
+PHONY: env
+env: ./.envrc
+	[[ ! -f '.envrc' ]] && make firstrun || true
 # if these aren't defined in envrc, define them here
 ifndef DOCKER_IMAGE_HOST
 	DOCKER_IMAGE_HOST=quay.io
@@ -44,20 +45,23 @@ ifndef DOCKER_IMAGE_ORG
 	DOCKER_IMAGE_ORG=pantheon-systems
 endif
 
-ifndef PROJECT_PREFIX
-	PROJECT_PREFIX=${DOCKER_PROJECT_PREFIX}
-endif
-
 # only need this for circle
 ifdef CIRCLE_BUILD_NUM
 		${DOCKER_HOST_LOGIN_COMMAND} := docker login -p "$${DOCKER_IMAGE_HOST}_PASSWD" -u "$${DOCKER_IMAGE_HOST}_USER" ${DOCKER_IMAGE_HOST}
 endif
 
 
-firstrun: ## update .envrc
-	# copy .envrc.dist .envrc and allow
+
+
+firstrun:
+	# if it doesn't exist, copy .envrc.dist .envrc and allow
 	cp .envrc.dist .envrc
-	# This will change env variables for only this folder
+	[[ -f '.env' ]] && mv .env .env.deprecated
+	@echo "The .env file has ben deprecated in favor of the direnv pattern"
+	@echo "of making an .envrc file for the directory"
+	@echo "Then doing a direnv allow so that entering into the directory "
+	@echo "sets the correct env vars."
+	@echo  "original .env file moved to .env.deprecated"
 	direnv allow
 
 
@@ -69,55 +73,125 @@ clean: env ## Tidy up docker's plumbing,
 	docker network prune -f
 	docker volume prune -f
 
+PHONY: build
 
 build: env ## Build all containers
-	make build-nginx
-	make build-php
-	make build-mysql
+	make build-containers
 
-build-nginx: env ./nginx-container ## Build the development Nginx Container
+build-containers: env ## Synonym Build all containers
+	make build-docker-nginx
+	make build-docker-php
+	make build-docker-mysql
+	make build-docker-solr
+
+build-docker-%: env ## Build single container {nginx,php,mysql,solr}
 	docker build \
 		--build-arg BUILD_DATE="${DATE_TAG}" \
 		--build-arg VCS_REF="${VCS_REF}" \
 		--build-arg VERSION="${BUILD_ID}" \
 		--build-arg REPO_NAME="${REPO_NAME}" \
-		-t "${NGINX_CONTAINER}" ./nginx-container
+		--tag=$(call getServiceContainerTag,$*) \
+		 ./$*-container
 
-build-php: env ./php-container ## Build PHP Container
-	docker build \
-		--build-arg BUILD_DATE="${DATE_TAG}" \
-		--build-arg VCS_REF="${VCS_REF}" \
-		--build-arg VERSION="${BUILD_ID}" \
-		--build-arg REPO_NAME="${REPO_NAME}" \
-		-t "${PHP_CONTAINER}" ./php-container
+pull: ## Pull containers down from ${DOCKER_IMAGE_HOST}.
+	make pull-nginx
+	make pull-php
+	make pull-mysql
+	make pull-solr
 
-build-mysql: env ./mysql-container ## build Mysql Container
-	docker build \
-		--build-arg BUILD_DATE="${DATE_TAG}" \
-		--build-arg VCS_REF="${VCS_REF}" \
-		--build-arg VERSION="${BUILD_ID}" \
-		--build-arg REPO_NAME="${REPO_NAME}" \
-		-t "${MYSQL_CONTAINER}" ./mysql-container
+pull-%:
+	SERVICE=$*
+	docker pull "$${SERVICE}_CONTAINER"
 
-push: setup-${DOCKER_IMAGE_HOST}
+
+push: ## Push containers up to ${DOCKER_IMAGE_HOST}.
 	make push-nginx
 	make push-php
 	make push-mysql
+	make push-solr
 
-push-nginx: ./nginx-container
-	docker push ${NGINX_CONTAINER}
+push-%:
+	SERVICE=$*
+	docker push "$${SERVICE}_CONTAINER"
 
-push-php: ./php-container
-	docker push ${PHP_CONTAINER}
 
-push-mysql:
-	docker push ${MYSQL_CONTAINER}
+
+
+
+
+
+emit-k8s-%:
+	make emit-nginx-k8s-$*
+	make emit-php-k8s-$*
+	make emit-mysql-k8s-$*
+	make emit-solr-k8s-$*
+
+emit-nginx-k8s-%:
+	K8S_DIR=$(call getSourceYamlTemplateFolder,nginx)
+	K8S_BUILD_DIR=./${*}/build_k8s
+	K8S_FILES=$(call getYamlFilesInDir,$$K8S_DIR)
+	make emit-k8s-files-$*
+
+emit-php-k8s-%:
+	K8S_DIR=$(call getSourceYamlTemplateFolder,php)
+	K8S_BUILD_DIR=./${*}/build_k8s
+	K8S_FILES=$(call getYamlFilesInDir,$$K8S_DIR)
+	make emit-k8s-files-$*
+
+emit-mysql-k8s-%:
+	K8S_DIR=$(call getSourceYamlTemplateFolder,mysql)
+	K8S_BUILD_DIR=./${*}/build_k8s
+	K8S_FILES=$(call getYamlFilesInDir,$$K8S_DIR)
+	make emit-k8s-files-$*
+
+emit-solr-k8s-%:
+	K8S_DIR=$(call getSourceYamlTemplateFolder,solr)
+	K8S_BUILD_DIR=./${*}/build_k8s
+	K8S_FILES=$(call getYamlFilesInDir,$$K8S_DIR)
+	make emit-k8s-files-$*
+
+
+build-k8s-files-%:
+	@mkdir -p $*/$(K8S_BUILD_DIR)
+	@for file in $(K8S_FILES); do \
+		mkdir -p `dirname "$(K8S_BUILD_DIR)/$$file"` ; \
+		$(SHELL_EXPORT) envsubst <$(K8S_DIR)/$$file >$(K8S_BUILD_DIR)/$$file ;\
+	done
+
+
+## Host a pantheon site locally with kubernetes
+
+build-site-%: ## build a site from a pantheon site ref
+	[[ ! -d "./${*}" ]] && make clone-site-$* || true
+	mkdir -p ${*}/web/sites/default
+	cp "settings.local.php" "${*}/web/sites/default/settings.local.php"
+	make build-k8s-$*
+	cd ./$*
+	$(shell cd $* && make build)
+
+
+
 
 flush:
 	# [[TODO: FIX ]] docker exec -t freshdrupalmi_php_1 '/var/www/vendor/bin/drush cr' && docker exec -t freshdrupalmi_redis_1 '/usr/local/bin/redis-cli FLUSHALL'
 
 
-setup-${DOCKER_IMAGE_HOST}: ## setup docker login for quay.io
+
+
+
+
+run-site-%: ## Run Makefile's RUN target for %site
+	cd $* && $(shell make run)
+
+teardown-site-%:
+	cd $* && $(shell make teardown)
+
+clone-site-%:
+	git clone ${GITHUB_REPO} $*
+	echo "/${*}" >> .gitignore
+
+
+setup-${DOCKER_IMAGE_HOST}: ## setup docker login for image host
 ifdef CIRCLE_BUILD_NUM
 	ifndef ${DOCKER_IMAGE_HOST}_PASSWD
 	@echo "You need to set ${DOCKER_IMAGE_HOST}_PASSWD in the cicleci envrionemnt variables."
@@ -137,3 +211,31 @@ else
 	# reusing the credentials.
 	@docker login ${DOCKER_IMAGE_HOST}
 endif
+
+_install_mac: ## install needed utilities with homebrew
+	brew install direnv kubernetes-cli jq yq docker make git envsubst
+_install_wsl: ## install needed utilities with WSL
+	# FOR REFERENCE: https://docs.microsoft.com/en-us/windows/wsl/about
+	wsl sudo apt-get update && wsl sudo apt-get install direnv kubernetes-cli jq yq docker make git envsubst
+
+##
+## help message system
+##
+help: ## print list of tasks and descriptions
+	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-38s\033[0m %s\n", $$1, $$2}'
+
+
+
+.DEFAULT_GOAL := help
+
+define getServiceContainerTag
+${DOCKER_IMAGE_HOST}/${DOCKER_IMAGE_ORG}/${DOCKER_PROJECT_PREFIX}-${PROJECT_NAME}-$(1):${IMAGE_TAG}
+endef
+
+define getSourceYamlTemplateFolder
+./$(1)-container/k8s
+endef
+
+define getYamlFilesInDir
+$(shell find $(1) -name '*.yaml' | sed 's:$(1)/::g')
+endef

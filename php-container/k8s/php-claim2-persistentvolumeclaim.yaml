@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  creationTimestamp: null
+  labels:
+    pantheon.project: ${PANTHEON_SITE_NAME}
+    pantheon.environment: local
+    pantheon.service: php-claim2
+  name: php-claim2
+spec:
+  accessModes:
+  - ReadOnlyMany
+  resources:
+    requests:
+      storage: 100Mi
+status: {}

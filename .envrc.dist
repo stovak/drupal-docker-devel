@@ -1,3 +1,5 @@
 export DOCKER_IMAGE_HOST=change_me_in_dot_envrc
 export DOCKER_IMAGE_ORG=change_me_in_dot_envrc
 export DOCKER_PROJECT_PREFIX=change_me_in_dot_envrc
+export PANTHEON_SITE_NAME=change_me_in_dot_envrc
+export GITHUB_REPO=change_me_in_dot_envrc

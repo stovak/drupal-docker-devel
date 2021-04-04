@@ -144,16 +144,25 @@ RUN docker-php-ext-install -j$(nproc) zip
 RUN docker-php-ext-install -j$(nproc) pdo
 RUN docker-php-ext-install -j$(nproc) pdo_mysql
 RUN docker-php-ext-install -j$(nproc) opcache
-RUN docker-php-ext-install -j$(nproc) yaml
-RUN docker-php-ext-install -j$(nproc) redis
-RUN docker-php-ext-install -j$(nproc) imagick
-RUN docker-php-ext-install -j$(nproc) uploadprogress
-RUN docker-php-ext-install -j$(nproc) redis
+
+RUN git clone https://github.com/Imagick/imagick /usr/src/php/ext/imagick \
+  && cd /usr/src/php/ext/imagick \
+  && phpize && ./configure && make \
+  && docker-php-ext-install imagick
+
+RUN pecl bundle -d /usr/src/php/ext yaml \
+    && rm /usr/src/php/ext/yaml-*.tgz \
+    && docker-php-ext-install yaml
+
+RUN pecl bundle -d /usr/src/php/ext redis \
+    && rm /usr/src/php/ext/redis-*.tgz \
+    && docker-php-ext-install redis
 
 
-RUN pear update-channels
-#RUN pear upgrade pear/archive_tar
 
+RUN pecl bundle -d /usr/src/php/ext uploadprogress \
+    && rm /usr/src/php/ext/uploadprogress-*.tgz \
+    && docker-php-ext-install uploadprogress
 
 COPY php/overrides.ini /usr/local/etc/php-fpm.d
 COPY php/php.ini /usr/local/etc/php
@@ -191,7 +200,6 @@ RUN mkdir -p /opt/terminus/plugins
 RUN composer create-project --no-dev -d /opt/terminus/plugins pantheon-systems/terminus-drupal-console-plugin
 RUN composer create-project --no-dev -d /opt/terminus/plugins pantheon-systems/terminus-rsync-plugin
 
-RUN composer global require consolidation/cgr
 RUN composer global require drupal/coder
 RUN composer global require friendsofphp/php-cs-fixer
 RUN composer global require dealerdirect/phpcodesniffer-composer-installer
@@ -250,6 +258,8 @@ RUN echo "*/15 * * * *	root    cd /var/www && vendor/bin/drush core:cron 2>&1" >
 #RUN chown www-data:www-data /tmp/www/web/sites/default/temp/.htaccess
 #RUN chown www-data:www-data /tmp/www/vendor
 #RUN touch /tmp/www/.env
+
+RUN rm -Rf /usr/src/*
 
 STOPSIGNAL SIGQUIT
 

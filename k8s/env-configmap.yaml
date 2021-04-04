@@ -1,0 +1,39 @@
+apiVersion: v1
+data:
+  BABEL_ENV: legacy
+  CACHE_HOST: redis
+  CACHE_PORT: "6379"
+  COMPOSER_ALLOW_SUPERUSER: "1"
+  DB_DRIVER: mysql
+  DB_HOST: mysql
+  DB_NAME: drupal8
+  DB_PASSWORD: password
+  DB_PORT: "3306"
+  DB_USER: milken-institute
+  DRUPAL_HASH_SALT: lDRPmMvzNIBzmBs4bvLXBot/r4uju6XZiiON3UolHQc=
+  DRUPAL_MAJOR_VERSION: "9"
+  DRUPAL_SYSTEM_LOGGING_ERROR_LEVEL: verbose
+  DRUSH_OPTIONS_URI: localhost:8080
+  ENABLE_GATSBY_REFRESH_ENDPOINT: "true"
+  ENV: local
+  MYSQL_DATABASE: drupal8
+  MYSQL_PASSWORD: password
+  MYSQL_ROOT_PASSWORD: drupal
+  MYSQL_USER: milken-institute
+  NODE_ENV: development
+  PREPROCESS_CSS: "FALSE"
+  PREPROCESS_JS: "FALSE"
+  PROD_PASS: ${PROD_PASSWORD}
+  PROD_USER: ${PROD_USER}
+  SKIP_PREFLIGHT_CHECK: "true"
+  SOLR_CORE: milken
+  SOLR_HOST: solr
+  SOLR_PATH: \/solr
+  SOLR_PORT: "8983"
+kind: ConfigMap
+metadata:
+  creationTimestamp: null
+  labels:
+    pantheon.project: ${PANTHEON_SITE_NAME}
+    pantheon.environment: local
+  name: env
