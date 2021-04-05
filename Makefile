@@ -1,9 +1,9 @@
 
-PROJECT_NAME=$(shell basename $(shell git rev-parse --show-toplevel))
-REPO_NAME=${DOCKER_IMAGE_ORG}/${DOCKER_PROJECT_PREFIX}-${PROJECT_NAME}
-VCS_REF=$(shell git rev-parse --short HEAD)
-DATE_TAG=$(shell TZ=UTC date +%Y-%m-%d_%H.%M)
-
+PROJECT_NAME ?= $(shell basename $(shell git rev-parse --show-toplevel))
+REPO_NAME ?= ${DOCKER_IMAGE_ORG}/${DOCKER_PROJECT_PREFIX}-${PROJECT_NAME}
+VCS_REF ?= $(shell git rev-parse --short HEAD)
+DATE_TAG ?= $(shell TZ=UTC date +%Y-%m-%d_%H.%M)
+VERSION ?= $(shell git describe --tags --always --dirty --match="v*" 2> /dev/null || cat $(CURDIR)/.version 2> /dev/null || echo v0)
 
 
 ## [[ todo: have these be params for the make command ]]
@@ -20,7 +20,7 @@ ifndef BUILD_ID
 	ifdef CIRCLE_BUILD_NUM
 		BUILD_ID:=${CIRCLE_BUILD_NUM}
 	else
-		BUILD_ID:=${USER}-$(VCS_REF)
+		BUILD_ID:=${USER}-${VERSION}-$(VCS_REF)
 	endif
 endif
 
@@ -50,6 +50,9 @@ ifdef CIRCLE_BUILD_NUM
 		${DOCKER_HOST_LOGIN_COMMAND} := docker login -p "$${DOCKER_IMAGE_HOST}_PASSWD" -u "$${DOCKER_IMAGE_HOST}_USER" ${DOCKER_IMAGE_HOST}
 endif
 
+MAKE_ENV += PROJECT_NAME REPO_NAME VCS_REF DATE_TAG VERSION BUILD_ID
+
+SHELL_EXPORT := $(foreach v,$(MAKE_ENV),$(v)='$($(v))' )
 
 
 
@@ -88,7 +91,7 @@ build-docker-%: env ## Build single container {nginx,php,mysql,solr}
 	docker build \
 		--build-arg BUILD_DATE="${DATE_TAG}" \
 		--build-arg VCS_REF="${VCS_REF}" \
-		--build-arg VERSION="${BUILD_ID}" \
+		--build-arg VERSION="${VERSION}" \
 		--build-arg REPO_NAME="${REPO_NAME}" \
 		--tag=$(call getServiceContainerTag,$*) \
 		 ./$*-container
@@ -127,9 +130,9 @@ emit-k8s-%:
 	make emit-solr-k8s-$*
 
 emit-nginx-k8s-%:
-	K8S_DIR=$(call getSourceYamlTemplateFolder,nginx)
-	K8S_BUILD_DIR=./${*}/build_k8s
-	K8S_FILES=$(call getYamlFilesInDir,$$K8S_DIR)
+	K8S_DIR ?= $(call getSourceYamlTemplateFolder,nginx)
+	K8S_BUILD_DIR="./$${*}/build_k8s"
+	K8S_FILES=$$(call getYamlFilesInDir,$$K8S_DIR)
 	make emit-k8s-files-$*
 
 emit-php-k8s-%:
@@ -211,6 +214,8 @@ else
 	# reusing the credentials.
 	@docker login ${DOCKER_IMAGE_HOST}
 endif
+
+
 
 _install_mac: ## install needed utilities with homebrew
 	brew install direnv kubernetes-cli jq yq docker make git envsubst

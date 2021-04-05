@@ -195,7 +195,7 @@ RUN cd /opt && git clone https://github.com/pantheon-systems/terminus.git termin
 WORKDIR /opt/terminus
 RUN cd /opt/terminus && composer install
 RUN cd /opt/terminus && composer update
-
+RUN ln -s /opt/terminus/bin/terminus /usr/local/bin
 RUN mkdir -p /opt/terminus/plugins
 RUN composer create-project --no-dev -d /opt/terminus/plugins pantheon-systems/terminus-drupal-console-plugin
 RUN composer create-project --no-dev -d /opt/terminus/plugins pantheon-systems/terminus-rsync-plugin
@@ -226,7 +226,9 @@ RUN echo "env[DRUPAL_SYSTEM_LOGGING_ERROR_LEVEL] = \$DRUPAL_SYSTEM_LOGGING_ERROR
 RUN echo "session.save_handler = redis" >> /usr/local/etc/php/conf.d/docker-php-ext-redis.ini
 RUN echo "session.save_path = tcp://\$REDIS_HOST:\$REDIS_PORT" >> /usr/local/etc/php/conf.d/docker-php-ext-redis.ini
 
-
+RUN echo "opcache.enable=1" >>  /usr/local/etc/php/conf.d/docker-php-ext-opcache.ini
+RUN echo "opcache.jit_buffer_size=100M" >> /usr/local/etc/php/conf.d/docker-php-ext-opcache.ini
+RUN echo "opcache.jit=1255" >> /usr/local/etc/php/conf.d/docker-php-ext-opcache.ini
 RUN echo "export LC_ALL=en_US.UTF-8" >> ~/.bashrc
 RUN echo "export LANG=en_US.UTF-8" >> ~/.bashrc
 RUN echo "export LANGUAGE=en_US.UTF-8" >> ~/.bashrc

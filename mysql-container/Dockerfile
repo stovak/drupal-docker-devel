@@ -1,5 +1,5 @@
 # Derived from official mysql image (our base image)
-FROM mysql:5.7
+FROM mariadb:10.4
 # Add a database
 ENV MYSQL_DATABASE drupal8
 ENV MYSQL_ROOT_PASSWORD drupal
@@ -19,7 +19,6 @@ RUN apt-get install -y jq curl zip
 
 COPY ./my.cnf /etc/mysql/conf.d/milken.cnf
 COPY ./entrypoint/* /docker-entrypoint-initdb.d/
-RUN ln -s /usr/local/bin/docker-entrypoint.sh /
 RUN chmod +x /docker-entrypoint-initdb.d/*
 RUN mkdir /home/mysql
 RUN chmod -R 700 /home/mysql
