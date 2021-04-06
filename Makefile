@@ -30,10 +30,12 @@ ifdef CIRCLE_BUILD_NUM
 endif
 
 
+PHP_CONTAINER=$(call getServiceContainerTag,php)
+NGINX_CONTAINER=$(call getServiceContainerTag,nginx)
+MYSQL_CONTAINER=$(call getServiceContainerTag,mysql)
 
 
-
-PHONY: env
+PHONY: env envrc
 env: ./.envrc
 	[[ ! -f '.envrc' ]] && make firstrun || true
 # if these aren't defined in envrc, define them here
@@ -50,7 +52,7 @@ ifdef CIRCLE_BUILD_NUM
 		${DOCKER_HOST_LOGIN_COMMAND} := docker login -p "$${DOCKER_IMAGE_HOST}_PASSWD" -u "$${DOCKER_IMAGE_HOST}_USER" ${DOCKER_IMAGE_HOST}
 endif
 
-MAKE_ENV += PROJECT_NAME REPO_NAME VCS_REF DATE_TAG VERSION BUILD_ID
+MAKE_ENV += PROJECT_NAME REPO_NAME VCS_REF DATE_TAG VERSION BUILD_ID PHP_CONTAINER NGINX_CONTAINER MYSQL_CONTAINER
 
 SHELL_EXPORT := $(foreach v,$(MAKE_ENV),$(v)='$($(v))' )
 
@@ -162,14 +164,17 @@ build-k8s-files-%:
 	done
 
 
+
 ## Host a pantheon site locally with kubernetes
 
 build-site-%: ## build a site from a pantheon site ref
 	[[ ! -d "./${*}" ]] && make clone-site-$* || true
 	mkdir -p ${*}/web/sites/default
 	cp "settings.local.php" "${*}/web/sites/default/settings.local.php"
-	make build-k8s-$*
-	cd ./$*
+
+
+	#make build-k8s-$*
+	#cd ./$*
 	$(shell cd $* && make build)
 
 
@@ -184,6 +189,8 @@ flush:
 
 
 run-site-%: ## Run Makefile's RUN target for %site
+	[[ ! -f "$*/docker-compose.yml" ]] $(SHELL_EXPORT) envsubst < templates/docker-compose.yml > $*/docker-compose.yml
+	[[ ! -f "$*/Makefile" ]] $(SHELL_EXPORT) envsubst < templates/Makefile > $*/Makefile
 	cd $* && $(shell make run)
 
 teardown-site-%:
