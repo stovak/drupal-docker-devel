@@ -167,16 +167,17 @@ build-k8s-files-%:
 
 ## Host a pantheon site locally with kubernetes
 
-build-site-%: ## build a site from a pantheon site ref
+build-site-%: ## build a site from a pantheon site
+iifndef $*
+	@echo "Usage: make build-site-(pantheon-sitename}"
+	@echo "e.g. make build-site-freshdrupalmi"
+endif
 	[[ ! -d "./${*}" ]] && make clone-site-$* || true
 	mkdir -p ${*}/web/sites/default
 	cp "settings.local.php" "${*}/web/sites/default/settings.local.php"
 
-
-	#make build-k8s-$*
-	#cd ./$*
-	$(shell cd $* && make build)
-
+	cd ./$*
+	make install
 
 
 
@@ -189,8 +190,8 @@ flush:
 
 
 run-site-%: ## Run Makefile's RUN target for %site
-	[[ ! -f "$*/docker-compose.yml" ]] $(SHELL_EXPORT) envsubst < templates/docker-compose.yml > $*/docker-compose.yml
-	[[ ! -f "$*/Makefile" ]] $(SHELL_EXPORT) envsubst < templates/Makefile > $*/Makefile
+	$(SHELL_EXPORT) envsubst < templates/docker-compose.yml > $*/docker-compose.yml
+	cp templates/Makefile $*/Makefile
 	cd $* && $(shell make run)
 
 teardown-site-%:
@@ -199,6 +200,9 @@ teardown-site-%:
 clone-site-%:
 	git clone ${GITHUB_REPO} $*
 	echo "/${*}" >> .gitignore
+
+
+
 
 
 setup-${DOCKER_IMAGE_HOST}: ## setup docker login for image host

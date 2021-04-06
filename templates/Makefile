@@ -9,6 +9,12 @@ env:
 	@[ ! -f ./.envrc ] && make firstrun || true
 
 
+lint: ## Lint, me baby. Do it long, do it hard. Do it now. (oh! my!)
+	composer code-fix
+	composer code-sniff
+	npm run lint
+
+
 
 build: env ## install dependencies and compile JS
 	make build-php-composer
@@ -20,6 +26,16 @@ build-php-composer: env ./composer.json ## composer install
 
 build-node-webpack: env ## npm install && npm run build
 	$(shell npm install && npm run build) > /dev/null
+
+install:
+	make install-composer
+	make install-npm
+
+install-composer:
+	composer install-vendor-dir
+
+install-npm:
+	npm install
 
 run: ## run the docker containers for a development environment
 	make run-docker
@@ -33,6 +49,17 @@ run-clone-livedb: env ## clone the live DB to the docker mysql instance
 	terminus backup:create ${LIVE_SITE} --element=database --yes > /dev/null
 	terminus backup:get ${LIVE_SITE} --element=database --yes --to="./db/${BACKUP_FILE_NAME}" > /dev/null
 	[[ -f "db/${BACKUP_FILE_NAME}" ]] && make run-clone-restore && true
+
+
+upgrade:
+	make upgrade-composer
+	make upgrade-npm
+
+upgrade-composer:
+	composer upgrade-vendor-dir
+
+upgrade-npm:
+	npm upgrade
 
 run-clone-restore:
 	# This makes the assumption that you are running a development version
