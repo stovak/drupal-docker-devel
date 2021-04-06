@@ -8,18 +8,14 @@ LIVE_SITE=${PANTHEON_SITE_NAME}.live
 env:
 	@[ ! -f ./.envrc ] && make firstrun || true
 
-
 lint: ## Lint, me baby. Do it long, do it hard. Do it now. (oh! my!)
 	composer code-fix
 	composer code-sniff
 	npm run lint
 
-
-
 build: env ## install dependencies and compile JS
 	make build-php-composer
 	make build-node-webpack
-
 
 build-php-composer: env ./composer.json ## composer install
 	$(shell composer install-vendor-dir)

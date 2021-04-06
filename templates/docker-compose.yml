@@ -2,7 +2,7 @@
 version: "3.7"
 services:
   nginx:
-    container_name: mi
+    container_name: ${PROJECT_NAME}
     image: ${NGINX_CONTAINER}
     expose:
       - 80
@@ -22,7 +22,7 @@ services:
       - .env
 
   php:
-    container_name: mi-php
+    container_name: ${PROJECT_NAME}-php
     image: ${PHP_CONTAINER}
     expose:
       - "9000"
@@ -41,11 +41,11 @@ services:
     env_file:
       - .env
     environment:
-      - BACKUP_FILE_NAME=backup.sql.gz
+      - BACKUP_FILE_NAME=${PROJECT_NAME}.sql.gz
       - DATABASE_NAME=drupal8
 
   mysql:
-    container_name: mi-mysql
+    container_name: ${PROJECT_NAME}-mysql
     image: ${MYSQL_CONTAINER}
     # uncomment this volume to have the mysql container
     # retain it's database from run-to-run.blkio_config:
@@ -62,7 +62,7 @@ services:
 
   redis:
     # Generic redis instance
-    container_name: mi-redis
+    container_name: ${PROJECT_NAME}-redis
     image: redis
     expose:
       - "6379"

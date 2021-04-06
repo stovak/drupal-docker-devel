@@ -13,5 +13,7 @@ First time after cloning:
 1. ```make build```
 
 
+For list of targets:
 
+1. ```make```
 
