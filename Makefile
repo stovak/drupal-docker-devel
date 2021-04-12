@@ -35,7 +35,7 @@ endif
 
 PHONY: env envrc
 env: ./.envrc
-	[[ ! -f '.envrc' ]] && make firstrun || true
+	@[[ ! -f '.envrc' ]] && make firstrun || true
 # if these aren't defined in envrc, define them here
 ifndef DOCKER_IMAGE_HOST
 	DOCKER_IMAGE_HOST=quay.io
@@ -71,90 +71,33 @@ firstrun:    ## You should need to run this only once.
 	direnv allow
 
 
-clean: env     ## Tidy up docker's plumbing,
-	# yes, every one of these do something slightly different...
-	docker system prune -f
-	docker container prune  -f
-	docker image prune -f
-	docker network prune -f
-	docker volume prune -f
-
-PHONY: build
-
-build: env     ## Build all containers.
-	make build-containers
-
-build-containers: env      ## Synonym Build all containers.
-	make build-docker-nginx
-	make build-docker-php
-	make build-docker-mysql
-	make build-docker-solr
-
-build-docker-%: env     ## Build single container {nginx,php,mysql,solr}.
-	docker build \
-		--build-arg BUILD_DATE="${DATE_TAG}" \
-		--build-arg VCS_REF="${VCS_REF}" \
-		--build-arg VERSION="${VERSION}" \
-		--build-arg REPO_NAME="${REPO_NAME}" \
-		--tag=$(call getServiceContainer,$*):latest \
-		 ./$*-container
-
-pull:     ## Pull containers down from ${DOCKER_IMAGE_HOST}.
-	make pull-nginx
-	make pull-php
-	make pull-mysql
-	make pull-solr
-
-pull-%:     ## Pull individual containers e.g. make pull-nginx.
-	docker pull $(call getServiceContainerTag,$*)
-
-push:     ## Push containers up to ${DOCKER_IMAGE_HOST}.
-	make push-nginx
-	make push-php
-	make push-mysql
-	make push-solr
-
-push-%:      ## Push individual containers e.g. make push-nginx.
-	docker push $(call getServiceContainerTag,$*)
 
 
-emit-k8s-%:      ## emit k8s for project.
-	make emit-nginx-k8s-$*
-	make emit-php-k8s-$*
-	make emit-mysql-k8s-$*
-	make emit-solr-k8s-$*
+docker-%: env     ## Build all containers.
+	make -f docker.mk $*
 
-emit-nginx-k8s-%:
-	K8S_DIR ?= $(call getSourceYamlTemplateFolder,nginx)
-	K8S_BUILD_DIR="./$${*}/build_k8s"
-	K8S_FILES=$$(call getYamlFilesInDir,$$K8S_DIR)
-	make emit-k8s-files-$*
-
-emit-php-k8s-%:
-	K8S_DIR=$(call getSourceYamlTemplateFolder,php)
-	K8S_BUILD_DIR=./${*}/build_k8s
-	K8S_FILES=$(call getYamlFilesInDir,$$K8S_DIR)
-	make emit-k8s-files-$*
-
-emit-mysql-k8s-%:
-	K8S_DIR=$(call getSourceYamlTemplateFolder,mysql)
-	K8S_BUILD_DIR=./${*}/build_k8s
-	K8S_FILES=$(call getYamlFilesInDir,$$K8S_DIR)
-	make emit-k8s-files-$*
-
-emit-solr-k8s-%:
-	K8S_DIR=$(call getSourceYamlTemplateFolder,solr)
-	K8S_BUILD_DIR=./${*}/build_k8s
-	K8S_FILES=$(call getYamlFilesInDir,$$K8S_DIR)
-	make emit-k8s-files-$*
+develop-%: env    ## Development build commands
+	make -f develop.mk $*
 
 
-build-k8s-files-%:
-	@mkdir -p $*/$(K8S_BUILD_DIR)
-	@for file in $(K8S_FILES); do \
-		mkdir -p `dirname "$(K8S_BUILD_DIR)/$$file"` ; \
-		$(SHELL_EXPORT) envsubst <$(K8S_DIR)/$$file >$(K8S_BUILD_DIR)/$$file ;\
-	done
+
+
+source-site: env ## Create a source-site for a pantheon-to-pantheon upgrade
+	@echo "This is actually a pseudo command to get you instructions"
+	@echo
+	@echo
+	@echo "If you have a site that uses Pantheon Build Tools and your"
+	@echo "builds run on a build service like **CIRCLE CI**"
+	@echo "clone the repo locally with the following command:"
+	@echo "echo 'export PANTHEON_SITE_NAME={PANTHEON_SITE_NAME}' >> .envrc"
+	@echo "make source-site-git-{GITREPO_URL}"
+	@echo
+	@echo
+	@echo
+	@echo
+	@echo
+
+
 
 
 
@@ -219,17 +162,53 @@ else
 endif
 
 
-_install_mac: ## install needed utilities with homebrew.
-	brew install direnv kubernetes-cli jq yq docker make git envsubst
-_install_wsl: ## install needed utilities with WSL.
-	# FOR REFERENCE: https://docs.microsoft.com/en-us/windows/wsl/about
-	wsl sudo apt-get update && wsl sudo apt-get install direnv kubernetes-cli jq yq docker make git envsubst
 
 ##
 ## help message system
 ##
 help: ## Print list of tasks and descriptions.
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-38s\033[0m %s\n", $$1, $$2}'
+
+
+how-to-use:  ## Instructions for using this makefile
+	@echo
+	@echo
+	@echo "Step 1:  make authterminus-{pantheon-account-email-address]"
+	@echo "         Authorize terminus to interact with pantheon on your account"
+	@echo
+	@echo "Step 2a: make clone-git-{git-address}"
+	@echo "         if you use a build-server like circleCI your primary repository might reside outside pantheon"
+	@echo ""
+	@echo "Step 2b: make clone-pantheon-{PANTHEON_SITE_NAME}"
+	@echo "         if your primary repo is at pantheon, run this with the site name as"
+	@echo "         the argument (e.g. 'make clone-pantheon-example-pantheon-site')."
+	@echo
+	@echo "Step 3:  make run"
+	@echo "         copy down a docker-compose file, latest templated makefile and a cursory"
+	@echo "         readme, cd to repo and do a 'make run'."
+	@echo
+	@echo "Step 4:  cd ${PANTHEON_SITE_NAME} && make build"
+	@echo "         Run the make command in the pantheon site... now go develop."
+	@echo "         readme, cd to repo and do a 'make run'."
+	@echo
+	@echo "Step 5:  make create-destination-%"
+	@echo "         Create a new pantheon site from the new d9 upstream."
+	@echo
+	@echo
+
+
+
+show-important-vars: env
+	@echo
+	@echo "=================================================================="
+	@echo "IMPORTANT ENVIRONMENT VARIABLES:"
+	@echo DOCKER_IMAGE_HOST=${DOCKER_IMAGE_HOST}
+	@echo DOCKER_IMAGE_ORG=${DOCKER_IMAGE_ORG}
+	@echo DOCKER_PROJECT_PREFIX=${DOCKER_PROJECT_PREFIX}
+	@echo PANTHEON_SITE_NAME=${PANTHEON_SITE_NAME}
+	@echo SOURCE_SITE_REPO=${SOURCE_SITE_REPO}
+	@echo DEST_SITE_REPO=${DEST_SITE_REPO}
+	@echo "=================================================================="
 
 
 

@@ -3,3 +3,6 @@
 /freshdrupalmi/
 .DS_Store
 /.freshdrupalmi
+
+out/
+/node_modules
