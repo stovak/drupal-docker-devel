@@ -1,16 +1,16 @@
 {
-    "name": "stovak\/project-demigods",
+    "name": "stovak/project-demigods",
     "description": "local development of pantheon-hosted sites",
     "type": "project",
     "license": "MIT",
     "minimum-stability": "dev",
     "require": {
-        "tm\/tooly-composer-script": "^1"
+        "tm/tooly-composer-script": "^1"
     },
     "extra": {
         "tools": {
             "terminus": {
-                "url": "https:\/\/github.com\/pantheon-systems\/terminus\/releases\/latest\/download\/terminus.phar"
+                "url": "https://github.com/pantheon-systems/terminus/releases/latest/download/terminus.phar"
             }
         }
     },
