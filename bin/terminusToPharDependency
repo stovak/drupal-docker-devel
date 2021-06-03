@@ -1,0 +1,36 @@
+#!/usr/bin/env php
+<?php
+
+# make a backup
+copy("composer.json", 'composer-' . uniqid() . ".json");
+
+# read the file and decode the json
+$composerFile = json_decode(file_get_contents("composer.json"),
+    true, 512, JSON_THROW_ON_ERROR);
+
+# add the tooly plugin
+$composerFile['require']['tm/tooly-composer-script'] = "^1";
+
+# add terminus to the "extra" section
+$composerFile['extra']['tools']['terminus']['url'] = "https://github.com/pantheon-systems/terminus/releases/latest/download/terminus.phar";
+
+if (!isset($composerFile['scripts']['post-install-cmd'])) {
+    $composerFile['scripts']['post-install-cmd'] = [];
+}
+if (!isset($composerFile['scripts']['post-update-cmd'])) {
+    $composerFile['scripts']['post-update-cmd'] = [];
+}
+if (is_string($composerFile['scripts']['post-install-cmd'])) {
+    $composerFile['scripts']['post-install-cmd'] = [ $composerFile['scripts']['post-install-cmd'] ];
+}
+if (is_string($composerFile['scripts']['post-update-cmd'])) {
+    $composerFile['scripts']['post-update-cmd'] = [ $composerFile['scripts']['post-update-cmd'] ];
+}
+
+
+
+$composerFile['scripts']['post-install-cmd'][] = "Tooly\ScriptHandler::installPharTools";
+$composerFile['scripts']['post-update-cmd'][] = "Tooly\ScriptHandler::installPharTools";
+
+file_put_contents("composer.json", json_encode($composerFile, JSON_PRETTY_PRINT, 5));
+
