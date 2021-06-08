@@ -329,6 +329,9 @@ help: ## print list of tasks and descriptions
 
 .DEFAULT_GOAL := help
 
-
-
 ```
+
+## Step 5
+
+`docker-compose up -d`
+
