@@ -6,10 +6,9 @@ tap "homebrew/services"
 brew "coreutils"
 brew "direnv"
 brew "imagemagick"
-brew "jq"
+brew "jq", link: true
 brew "libyaml"
+brew "make", link: true
 brew "php@7.4", link: true
 brew "wget"
-brew "ykneomgr"
-brew "ykpers"
-brew "yq"
+brew "yq", link: true

@@ -2,8 +2,8 @@
 version: "3.7"
 services:
   nginx:
-    container_name: ${PROJECT_NAME}
-    image: ${NGINX_CONTAINER}
+    container_name: mi
+    image: stovak/project-demigods-nginx:latest
     expose:
       - 80
       - 9222
@@ -17,17 +17,20 @@ services:
       - ".:/var/www"
     ports:
       - "8080:80"
+      - "443:443"
       - "9222:9222"
     env_file:
       - .env
 
   php:
-    container_name: ${PROJECT_NAME}-php
-    image: ${PHP_CONTAINER}
+    container_name: mi-php
+    image: stovak/project-demigods-php:latest
     expose:
       - "9000"
     ports:
       - "9000:9000"
+    external_links:
+      - solr-ssl_solr-network:milkensolr-nginx
     volumes:
       - ".:/var/www"
       - "$HOME/.terminus/cache:/root/.terminus/cache:cached"
@@ -41,18 +44,12 @@ services:
     env_file:
       - .env
     environment:
-      - BACKUP_FILE_NAME=${PROJECT_NAME}.sql.gz
+      - BACKUP_FILE_NAME=backup.sql.gz
       - DATABASE_NAME=drupal8
 
   mysql:
-    container_name: ${PROJECT_NAME}-mysql
-    image: ${MYSQL_CONTAINER}
-    # uncomment this volume to have the mysql container
-    # retain it's database from run-to-run.blkio_config:
-    # ideally you would power up and get a fresh db
-    # with every development sprint.
-    #volumes:
-    # - './db:/var/lib/mysql'
+    container_name: mi-mysql
+    image: stovak/project-demigods-mysql:latest
     expose:
       - "3306"
     ports:
@@ -61,13 +58,10 @@ services:
       - .env
 
   redis:
-    # Generic redis instance
-    container_name: ${PROJECT_NAME}-redis
+    container_name: project-demigods-redis:latest
     image: redis
     expose:
       - "6379"
-
-## TODO: add solr service
 
 volumes:
   web: {}

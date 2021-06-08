@@ -38,7 +38,15 @@ firstrun:    ## You should need to run this only once.
 	@echo "sets the correct env vars."
 	@echo  "original .env file moved to .env.deprecated"
 	direnv allow
+	composer install
 
+
+authterminus:  # Authorize terminus to work from this machine
+	@echo 'if this fails, rerun "vendor/bin/terminus.phar auth:login "'
+	@echo 'if this is your first time logging into terminus you will need'
+	@echo 'to follow the instructions terminus gives you in getting a token'
+	@echo 'TODO: instructions for setting up email in ENV var to auto-login'
+	vendor/bin/terminus.phar auth:login --email=$1
 
 
 
@@ -48,7 +56,7 @@ docker-%: env     ## Build all containers.
 develop-%: env    ## Development build commands
 	make -f develop.mk $*
 
-
+run:  ## once a site as been cloned, launch a docker environment and host it locally
 
 
 source-site: env ## Create a source-site for a pantheon-to-pantheon upgrade

@@ -30,15 +30,15 @@ pull-%:     ## Pull individual containers e.g. make pull-nginx.
 	docker pull $(call getServiceContainerTag,$*)
 
 push:     ## Push containers up to ${DOCKER_IMAGE_HOST}.
-	make push-nginx
-	make push-php
-	make push-mysql
-	make push-solr
+	make docker-push-nginx
+	make docker-push-php
+	make docker-push-mysql
+	make docker-push-solr
 
 push-%:      ## Push individual containers e.g. make push-nginx.
 	docker push $(call getServiceContainerTag,$*)
 
-clean: env     ## Tidy up docker's plumbing,
+clean:     ## Tidy up docker's plumbing,
 	# yes, every one of these do something slightly different...
 	docker system prune -f
 	docker container prune  -f

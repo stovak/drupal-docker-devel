@@ -3,24 +3,13 @@
 include common.mk
 
 
-site:
-	@echo "put your git url on the end of this command like so"
-	@echo "make develop-site-[pantheon-site-id/name]"
-	exit 1
 
 
-site-%:
-	[[-d $* ]] && make develop-clone-$* || true
-
-clone-%:  ## Clone site
-	LOCAL_GIT_COMMAND="$($*_GIT_COMMAND)"
-ifeq (${LOCAL_GIT_COMMAND},)
-	@echo "Override where this repo is cloned from by setting $*_GIT_COMMAND variable in .envrc"
-	@echo "Otherwise we get this value from terminus: like so"
-	LOCAL_GIT_COMMAND=$(call getGitRepoCloneCommand,$*)
-endif
-	@echo $*_GIT_COMMAND
-
+clone:  ## Clone site
+	if [! -d "./local-copies/${PANTHEON_SITE_NAME}" ]
+		GIT_URL=`vendor/bin/terminus.phar connection:info ${PANTHEON_SITE_NAME}.dev --field=git_url`
+		git clone ${GIT_URL} ./local-copies/${PANTHEON_SITE_NAME}
+	fi
 
 
 source-site-git-%:
